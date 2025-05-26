@@ -11,6 +11,10 @@ class Magazine:
     @property
     def name(self):
         return self._name
+    
+    @property
+    def category(self):
+        return self._category
 
     @name.setter
     def name(self, value):
@@ -18,7 +22,13 @@ class Magazine:
             raise ValueError("Hizi ni gani umeanza") 
         self._name = value.strip()
 
-    def save(self):
+    @category.setter
+    def category(self,value):
+       if not isinstance(value, str) or not value.strip():
+            raise ValueError("Hizi ni gani umeanza") 
+       self._category = value.strip()
+        
+       def save(self):
         conn = sqlite3.connect('Magazine.db')
         cursor = conn.cursor()
 
