@@ -1,14 +1,13 @@
 import sqlite3
+from lib.db.connection import get_connection
+
 
 class Article:
-    _records = []
-
-    def __init__(self, name, title, magazine, author, id=None):
-        self.name = name
-        self.title = title
-        self.magazine = magazine
-        self.author = author
+    def __init__(self, title, author_id, magazine_id, id=None):
         self.id = id
+        self.title = title
+        self.author_id = author_id
+        self.magazine_id = magazine_id
 
     @property
     def title(self):
@@ -16,74 +15,116 @@ class Article:
 
     @title.setter
     def title(self, value):
-        if not isinstance(value, str) or not value.strip():
-            raise ValueError("Title must be a non-empty string")
+        if not isinstance(value, str) or len(value.strip()) == 0:
+            raise ValueError("Title must be a non-empty string.")
         self._title = value.strip()
 
     def save(self):
-        conn = sqlite3.connect('Article.db')
+        """Save article to database or update existing one."""
+        conn = get_connection()
         cursor = conn.cursor()
 
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS Article (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                name TEXT NOT NULL,
-                title TEXT NOT NULL,
-                magazine TEXT NOT NULL,
-                author TEXT NOT NULL
-            )
-        ''')
-
-        if self.id is None:
-            cursor.execute(
-                'INSERT INTO Article (name, title, magazine, author) VALUES (?, ?, ?, ?)',
-                (self.name, self.title, self.magazine, self.author)
-            )
-            self.id = cursor.lastrowid
-        else:
-            cursor.execute(
-                'UPDATE Article SET name = ?, title = ?, magazine = ?, author = ? WHERE id = ?',
-                (self.name, self.title, self.magazine, self.author, self.id)
-            )
-
-        conn.commit()
-        conn.close()
+        try:
+            if self.id is None:
+                cursor.execute(
+                    "INSERT INTO articles (title, author_id, magazine_id) VALUES (?, ?, ?)",
+                    (self.title, self.author_id, self.magazine_id)
+                )
+                self.id = cursor.lastrowid
+            else:
+                cursor.execute(
+                    "UPDATE articles SET title = ?, author_id = ?, magazine_id = ? WHERE id = ?",
+                    (self.title, self.author_id, self.magazine_id, self.id)
+                )
+            conn.commit()
+        finally:
+            conn.close()
 
     @classmethod
-    def find_id(cls, id):
-        conn = sqlite3.connect('Article.db')
+    def find_by_id(cls, id):
+        """Find an article by ID."""
+        conn = get_connection()
         cursor = conn.cursor()
 
-        cursor.execute('SELECT id, name, title, magazine, author FROM Article WHERE id = ?', (id,))
+        cursor.execute("SELECT id, title, author_id, magazine_id FROM articles WHERE id = ?", (id,))
         row = cursor.fetchone()
-
         conn.close()
+
         if row:
-            return cls(id=row[0], name=row[1], title=row[2], magazine=row[3], author=row[4])
+            return cls(
+                id=row['id'],
+                title=row['title'],
+                author_id=row['author_id'],
+                magazine_id=row['magazine_id']
+            )
         return None
 
     @classmethod
-    def find_title(cls, title):
-        conn = sqlite3.connect('Article.db')
+    def find_by_title(cls, title):
+        """Find all articles with a given title."""
+        conn = get_connection()
         cursor = conn.cursor()
-        cursor.execute('SELECT id, name, title, magazine, author FROM Article WHERE title = ?', (title,))
+
+        cursor.execute("SELECT id, title, author_id, magazine_id FROM articles WHERE title = ?", (title,))
         rows = cursor.fetchall()
         conn.close()
-        return [cls(id=row[0], name=row[1], title=row[2], magazine=row[3], author=row[4]) for row in rows]
+
+        return [
+            cls(
+                id=row['id'],
+                title=row['title'],
+                author_id=row['author_id'],
+                magazine_id=row['magazine_id']
+            ) for row in rows
+        ]
 
     @classmethod
-    def find_author(cls, author):
-        conn = sqlite3.connect('Article.db')
+    def find_by_author(cls, author_id):
+        """Find all articles written by a specific author."""
+        conn = get_connection()
         cursor = conn.cursor()
-        cursor.execute('SELECT id, name, title, magazine, author FROM Article WHERE author = ?', (author,))
+
+        cursor.execute("SELECT id, title, author_id, magazine_id FROM articles WHERE author_id = ?", (author_id,))
         rows = cursor.fetchall()
         conn.close()
-        return [cls(id=row[0], name=row[1], title=row[2], magazine=row[3], author=row[4]) for row in rows]
+
+        return [
+            cls(
+                id=row['id'],
+                title=row['title'],
+                author_id=row['author_id'],
+                magazine_id=row['magazine_id']
+            ) for row in rows
+        ]
+
     @classmethod
-    def find_magazine(cls, magazine):
-        conn = sqlite3.connect('Article.db')
+    def find_by_magazine(cls, magazine_id):
+        """Find all articles published in a specific magazine."""
+        conn = get_connection()
         cursor = conn.cursor()
-        cursor.execute('SELECT id, name, title, magazine, author FROM Article WHERE magazine = ?', (magazine,))
+
+        cursor.execute("SELECT id, title, author_id, magazine_id FROM articles WHERE magazine_id = ?", (magazine_id,))
         rows = cursor.fetchall()
         conn.close()
-        return [cls(id=row[0], name=row[1], title=row[2], magazine=row[3], author=row[4]) for row in rows]
+
+        return [
+            cls(
+                id=row['id'],
+                title=row['title'],
+                author_id=row['author_id'],
+                magazine_id=row['magazine_id']
+            ) for row in rows
+        ]
+
+    def author(self):
+        """Get the Author who wrote this article."""
+        from .author import Author
+        return Author.find_by_id(self.author_id)
+
+    def magazine(self):
+        """Get the Magazine where this article was published."""
+        from .magazine import Magazine
+        return Magazine.find_by_id(self.magazine_id)
+
+    def __repr__(self):
+        return f"<Article(id={self.id}, title='{self.title}', author_id={self.author_id}, magazine_id={self.magazine_id})>"
