@@ -18,7 +18,7 @@ class Author:
         self._name = value.strip()
 
     def save(self):
-        """Save author to database or update existing one."""
+       
         conn = get_connection()
         cursor = conn.cursor()
 
@@ -40,7 +40,6 @@ class Author:
 
     @classmethod
     def find_by_id(cls, id):
-        """Find an author by their ID."""
         conn = get_connection()
         cursor = conn.cursor()
 
@@ -53,7 +52,7 @@ class Author:
         return None
 
     def articles(self):
-        """Get all articles written by this author."""
+      
         conn = get_connection()
         cursor = conn.cursor()
 
@@ -64,7 +63,7 @@ class Author:
         return [dict(row) for row in rows]
 
     def magazines(self):
-        """Get all unique magazines this author has contributed to."""
+     
         conn = get_connection()
         cursor = conn.cursor()
 
@@ -79,7 +78,7 @@ class Author:
         return [dict(row) for row in rows]
 
     def add_article(self, magazine, title):
-        """Create a new article for this author in a specific magazine."""
+     
         conn = get_connection()
         cursor = conn.cursor()
 
@@ -93,7 +92,7 @@ class Author:
             conn.close()
 
     def topic_areas(self):
-        """Get unique categories of magazines this author has written for."""
+   
         conn = get_connection()
         cursor = conn.cursor()
 
